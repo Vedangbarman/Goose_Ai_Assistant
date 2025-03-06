@@ -2,6 +2,7 @@ import sys
 import os
 import datetime
 import pyttsx3
+import requests
 import speech_recognition as sr
 import openai
 import subprocess
@@ -13,7 +14,11 @@ import psutil
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
-openai.api_key = "your_openai_api_key_here"
+API_KEY = ""
+
+OPENAI_API_KEY = ""
+openai.api_key = OPENAI_API_KEY
+
 
 # Initialize Text-to-Speech engine
 engine = pyttsx3.init()
@@ -87,6 +92,13 @@ class Goose(ttk.Window):
         elif query.startswith("play "):
             self.play_music(query)
             return
+        
+        elif "weather in" in query:
+            city = query.split("weather in")[-1].strip()
+            if city:
+                self.get_weather(city)
+            else:
+                self.display_response("Please specify a city name.")
 
         else:
             self.ask_openai(query)
@@ -190,6 +202,20 @@ class Goose(ttk.Window):
         self.text_display.insert(END, f"Goose: {text}\n")
         self.text_display.config(state=DISABLED)
         self.say(text)
+    
+    def get_weather(self, city):
+        url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
+        try:
+            response = requests.get(url)
+            data = response.json()
+            if data["cod"] == 200:
+                temp = data["main"]["temp"]
+                description = data["weather"][0]["description"]
+                self.display_response(f"The weather in {city} is {description} with a temperature of {temp}°C.")
+            else:
+                self.display_response("Could not retrieve weather data. Please check the city name.")
+        except Exception:
+            self.display_response("Error fetching weather information.")
 
 if __name__ == "__main__":
     app = Goose()
